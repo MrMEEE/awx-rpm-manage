@@ -22,9 +22,8 @@ elif command == "update":
 	#version = stream.read()
 	#stream = os.popen("dnf info awx-rpm |grep Release | awk -F\: '{print $2}' | awk '{$1=$1};1' | tr -d '\n'")
 	#release = stream.read()
-	stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n'")
+	stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
 	version = stream.read()
-	print(version)
 	print("Newest AWX-RPM Version available in repos is: "+version)
 	print("Getting lastest package excludelists")
 	url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+version
