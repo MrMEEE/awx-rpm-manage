@@ -10,7 +10,7 @@ But the exclude lists should help solve previous package conflicts, please repor
 
 So right now the only command available is:
 
-´´´awx-rpm-manage update
+```awx-rpm-manage update
 
 Which should update all packages on the system, also the awx-rpm dependencies and update awx-rpm to newest package with the current release.
 
