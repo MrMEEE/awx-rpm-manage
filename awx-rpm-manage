@@ -5,6 +5,8 @@ import os
 import subprocess
 import urllib.request
 import configparser
+import json
+from packaging import version
 
 parser = argparse.ArgumentParser(description='AWX-RPM management')
 parser.add_argument(metavar='OPERATION',help="Choose either: install, update, upgrade or config",dest='operation',choices=["install","update","upgrade","config"])
@@ -13,42 +15,152 @@ args = parser.parse_args()
 
 command = str(args.operation)
 
+def rename_config_section(config, old_section, new_section):
+    """Rename a section in a configparser object."""
+    config._sections[new_section] = config._sections.pop(old_section)
+
 if command == "install":
-	print("Installation is not yet implemented")
+        print("Installation is not yet implemented")
+elif command == "config":
+        print("Configuration is not yet implemented")
+elif command == "upgrade":
+        print("Getting info on latest AWX-RPM Version")
+        repo = configparser.ConfigParser()
+        repo.read('/etc/yum.repos.d/awx-rpm.repo')
+        repos = repo.sections()
+        currentversion = repos[0].replace("awx-rpm-","")
+        url = "https://api.github.com/repos/MrMEEE/awx-rpm-versions/branches"
+        response = urllib.request.urlopen(url)
+        data = json.load(response)
+        updates = []
+        for d in data:
+            if d["name"] != "main" and version.parse(str(d["name"])) > version.parse(str(currentversion)):
+                updates.append(d)
+        print("You are currently on version: "+currentversion)
+        print("")
+        print("Available versions:")
+        print("")
+        i = 1
+        for version in updates:
+             print(str(i)+": "+version['name'])
+
+        print("")
+        print("Enter the number for the version to upgrade to")
+        print("")
+        input = int(input('Enter value: ').strip() or "42")
+        upgrade = int(input) - 1
+        try:
+            print("Upgrading to version: "+updates[upgrade]['name'])
+        except:
+            print("Wrong input, try again")
+            raise
+        oldreponame = repos[0]
+        newreponame = repos[0].replace(currentversion, updates[upgrade]['name'])
+        newrepourl = repo.get(oldreponame,'baseurl').replace(currentversion, updates[upgrade]['name'])
+        repo[oldreponame]['baseurl'] = newrepourl
+        rename_config_section(repo, oldreponame, newreponame)
+
+        print("Changing the repo to version: "+updates[upgrade]['name'])
+        with open('/etc/yum.repos.d/awx-rpm.repo', 'w') as repofile:
+                repo.write(repofile)
+
+        subprocess.run(["/usr/bin/dnf", "clean", "all"])
+
+        stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
+        version = stream.read()
+        
+        print("Newest AWX-RPM Version available in repos is: "+version)
+        print("Getting lastest package excludelists")
+
+        url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+version
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        excludepackages = data.decode('utf-8')
+        excludeline = ""
+        for each_line in excludepackages:
+                package = each_line.replace("\n", ",").strip()
+                excludeline = excludeline + package
+
+        print("Setting excludelist for EPEL")
+        repo = configparser.ConfigParser()
+        repo.read('/etc/yum.repos.d/epel.repo')
+        repo['epel']['exclude'] = excludeline
+        with open('/etc/yum.repos.d/epel.repo', 'w') as repofile:
+                repo.write(repofile)
+        
+        subprocess.run(["/usr/bin/dnf", "clean", "all"])        
+
+        if version.parse(currentversion) < '24.1.0':
+                print("Doing workaround and cleanup for moving from Python3 to Python3.11")
+                stream = os.popen("dnf -y remove awx-rpm")
+                stream = os.popen("dnf -y install awx-rpm")
+        else:
+                print("Upgrading AWX-RPM")
+                stream = os.popen("dnf -y update awx-rpm")
+                print(stream.read())
+
+        print("Updating dependencies")
+        stream = os.popen("dnf -y update")
+        print(stream.read())
+
+        print("Updating the AWX-RPM database")
+        stream = os.popen("sudo -u awx awx-manage migrate")
+        print(stream.read())
+
+        print("Restarting AWX-RPM services")
+        stream = os.popen("systemctl restart awx.target")
+        print(stream.read())
+
+
 elif command == "update":
-	print("Getting info on latest AWX-RPM Version")
-	#subprocess.run(["/usr/bin/dnf", "clean", "all"])	
-	#stream = os.popen("dnf info awx-rpm |grep Version | awk -F\: '{print $2}' | awk '{$1=$1};1' | tr -d '\n'")
-	#version = stream.read()
-	#stream = os.popen("dnf info awx-rpm |grep Release | awk -F\: '{print $2}' | awk '{$1=$1};1' | tr -d '\n'")
-	#release = stream.read()
-	stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
-	version = stream.read()
-	print("Newest AWX-RPM Version available in repos is: "+version)
-	print("Getting lastest package excludelists")
-	url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+version
-	response = urllib.request.urlopen(url)
-	data = response.read()
-	excludepackages = data.decode('utf-8')
-	excludeline = ""
-	for each_line in excludepackages:
-		package = each_line.replace("\n", ",").strip()
-		excludeline = excludeline + package
+        print("Getting info on latest AWX-RPM Updates")
+        repo = configparser.ConfigParser()
+        repo.read('/etc/yum.repos.d/awx-rpm.repo')
+        repos = repo.sections()
+        currentversion = repos[0].replace("awx-rpm-","")
 
-	print("Setting excludelist for EPEL")
-	repo = configparser.ConfigParser()
-	repo.read('/etc/yum.repos.d/epel.repo')
-	repo['epel']['exclude'] = excludeline
-	with open('/etc/yum.repos.d/epel.repo', 'w') as repofile:
-        	repo.write(repofile)
+        subprocess.run(["/usr/bin/dnf", "clean", "all"])
+        #stream = os.popen("dnf info awx-rpm |grep Version | awk -F\: '{print $2}' | awk '{$1=$1};1' | tr -d '\n'")
+        #version = stream.read()
+        #stream = os.popen("dnf info awx-rpm |grep Release | awk -F\: '{print $2}' | awk '{$1=$1};1' | tr -d '\n'")
+        #release = stream.read()
+        stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
+        version = stream.read()
+        if (version == ""):
+                print("AWX-RPM is already updated to lastest, try awx-rpm-manage upgrade for major updates")
+                quit()
+        print("Newest AWX-RPM Version available in repos is: "+version)
+        print("Getting lastest package excludelists")
+        url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+version
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        excludepackages = data.decode('utf-8')
+        excludeline = ""
+        for each_line in excludepackages:
+                package = each_line.replace("\n", ",").strip()
+                excludeline = excludeline + package
 
-	print("Setting excludelist for PyPI")
-	repo = configparser.ConfigParser()
-	repo.read('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo')
-	repo['copr:copr.fedorainfracloud.org:group_copr:PyPI']['exclude'] = excludeline
-	with open('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo', 'w') as repofile:
-		repo.write(repofile)
-	print("Updating AWX-RPM")
-	subprocess.run(["/usr/bin/dnf","-y", "update", "awx-rpm"])
-	print("Updating Dependencies")
-	subprocess.run(["/usr/bin/dnf","-y", "update"])
+        print("Setting excludelist for EPEL")
+        repo = configparser.ConfigParser()
+        repo.read('/etc/yum.repos.d/epel.repo')
+        repo['epel']['exclude'] = excludeline
+        with open('/etc/yum.repos.d/epel.repo', 'w') as repofile:
+                repo.write(repofile)
+        
+        if os.path.isfile('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo'):
+                repo = configparser.ConfigParser()
+                repo.read('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo')
+                if version.parse(currentversion) < '24.1.0':
+                       print("Setting excludelist for PyPI")
+                       repo['copr:copr.fedorainfracloud.org:group_copr:PyPI']['exclude'] = excludeline
+                       with open('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo', 'w') as repofile:
+                              repo.write(repofile)
+                else:
+                       os.remove('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo') 
+        
+        subprocess.run(["/usr/bin/dnf", "clean", "all"])
+        print("Updating AWX-RPM")
+        subprocess.run(["/usr/bin/dnf","-y", "update", "awx-rpm"])
+        print("Updating Dependencies")
+        subprocess.run(["/usr/bin/dnf","-y", "update"])
+
