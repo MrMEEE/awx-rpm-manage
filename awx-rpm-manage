@@ -143,15 +143,15 @@ elif command == "update":
         log(stream.read())
 
         stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
-        version = stream.read()
+        newversion = stream.read()
         log(stream.read())
 
-        if (version == ""):
+        if (newversion == ""):
                 print_and_log("AWX-RPM is already updated to lastest, try awx-rpm-manage upgrade for major updates")
                 quit()
-        print_and_log("Newest AWX-RPM Version available in repos is: "+version)
+        print_and_log("Newest AWX-RPM Version available in repos is: "+newversion)
         print_and_log("Getting lastest package excludelists")
-        url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+version
+        url = "https://rpm.awx.wiki/AWX-RPM/excludelists/awx-rpm-"+newversion
         response = urllib.request.urlopen(url)
         data = response.read()
         excludepackages = data.decode('utf-8')
@@ -171,8 +171,8 @@ elif command == "update":
         if os.path.isfile('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo'):
                 repo = configparser.ConfigParser()
                 repo.read('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo')
-                if version.parse(currentversion) < '24.1.0':
-                       print_log_parse("Setting excludelist for PyPI")
+                if version.parse(str(currentversion)) < version.parse('24.1.0'):
+                       print_and_log("Setting excludelist for PyPI")
                        repo['copr:copr.fedorainfracloud.org:group_copr:PyPI']['exclude'] = excludeline
                        with open('/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_copr:PyPI.repo', 'w') as repofile:
                               repo.write(repofile)
