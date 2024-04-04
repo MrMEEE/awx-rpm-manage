@@ -4,20 +4,25 @@ The AWX-RPM Management Tool has been released :)
 
 So.. what does it do?
 
-For now, it does "only" updating and control of package exclude lists..
+For now, it does "only" updating, upgrading and control of package exclude lists..
 
 But the exclude lists should help solve previous package conflicts, please report back if it doesn't.
 
-So right now the only command available is:
+So right now the commands available is:
 
 ```awx-rpm-manage update```
 
-Which should update all packages on the system, also the awx-rpm dependencies and update awx-rpm to newest package with the current release.
+Update all packages on the system, also the awx-rpm dependencies and update awx-rpm to newest package with the current release.
 
-24.0.0 has just been released, but I hope to have release "awx-rpm-manage upgrade" ready together with the next release.
+```awx-rpm-manage upgrade```
 
-After that, installation and configuration will be in focus.
+Give the choice to upgrade to a newer release.
 
-awx-rpm-manage is available as rpm in the 24.0.0 repo.
+
+Installation and configuration will be in focus, now that upgrading works.
+
+awx-rpm-manage is available as rpm in the 24.0.0 and 24.1.0 repos.
+
+```dnf install awx-rpm-manage```
 
 All awx-rpm-manage issues should be reported at: https://github.com/MrMEEE/awx-rpm-v2/issues
