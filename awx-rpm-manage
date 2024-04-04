@@ -111,10 +111,14 @@ elif command == "upgrade":
 
         if version.parse(str(currentversion)) < version.parse('24.1.0'):
                 print_and_log("Doing workaround and cleanup for moving from Python3 to Python3.11")
+                stream = os.popen("cp /etc/tower/settings.py /etc/tower/settings.py.workaround")
+                log(stream.read())
                 stream = os.popen("dnf -y remove awx-rpm")
                 log(stream.read())
                 print_and_log("Upgrading AWX-RPM")
                 stream = os.popen("dnf -y install awx-rpm")
+                log(stream.read())
+                stream = os.popen("cp -f /etc/tower/settings.py.workaround /etc/tower/settings.py")
                 log(stream.read())
         else:
                 print_and_log("Upgrading AWX-RPM")
