@@ -13,6 +13,8 @@ parser.add_argument(metavar='OPERATION',help="Choose either: install, update, up
 
 args = parser.parse_args()
 
+stream = os.popen("mv /etc/yum.repos.d/awx-rpm*.repo /etc/yum.repos.d/awx-rpm.repo")
+
 command = str(args.operation)
 
 f = open("/tmp/awx-rpm-manage.log", "a")
