@@ -84,8 +84,8 @@ elif command == "upgrade":
         log(stream.read())
 
         stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
-        log(stream.read())
         newestversion = stream.read()
+        log(newestversion)
         
         print_and_log("Newest AWX-RPM Version available in repos is: "+newestversion)
         print_and_log("Getting lastest package excludelists")
@@ -150,7 +150,7 @@ elif command == "update":
 
         stream = os.popen("dnf check-update -b awx-rpm |grep awx-rpm | awk '{ print $2}' | awk '{$1=$1};1' | tr -d '\n' |sed \"s/repository//g\"")
         newversion = stream.read()
-        log(stream.read())
+        log(newversion)
 
         if (newversion == ""):
                 print_and_log("AWX-RPM is already updated to lastest, try awx-rpm-manage upgrade for major updates")
