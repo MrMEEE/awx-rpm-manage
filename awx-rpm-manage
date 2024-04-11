@@ -63,7 +63,7 @@ elif command == "upgrade":
         print_and_log("Enter the number for the version to upgrade to")
         print_and_log("")
         input = int(input('Enter value: ').strip() or "42")
-        log("Input was: "+input)
+        log("Input was: "+str(input))
         upgrade = int(input) - 1
         try:
             print_and_log("Upgrading to version: "+updates[upgrade]['name'])
