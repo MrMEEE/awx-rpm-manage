@@ -56,8 +56,8 @@ elif command == "upgrade":
         print_and_log("Available versions:")
         print_and_log("")
         i = 1
-        for newversion in updates:
-             print_and_log(str(i)+": "+newversion['name'])
+        for i,newversion in enumerate(updates,start=1):
+             print_and_log(f"{i}: {newversion['name']}")
 
         print_and_log("")
         print_and_log("Enter the number for the version to upgrade to")
