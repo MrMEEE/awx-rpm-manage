@@ -51,6 +51,7 @@ elif command == "upgrade":
             print_and_log("No upgrades available")
             quit()
 
+
         print_and_log("You are currently on version: "+currentversion)
         print_and_log("")
         print_and_log("Available versions:")
@@ -62,14 +63,26 @@ elif command == "upgrade":
         print_and_log("")
         print_and_log("Enter the number for the version to upgrade to")
         print_and_log("")
-        input = int(input('Enter value: ').strip() or "42")
-        log("Input was: "+str(input))
-        upgrade = int(input) - 1
+        answer = int(input('Enter value: ').strip() or "42")
+        log("Input was: "+str(answer))
+        upgrade = int(answer) - 1
         try:
             print_and_log("Upgrading to version: "+updates[upgrade]['name'])
         except:
             print_and_log("Wrong input, try again")
             raise
+
+        if version.parse(str(currentversion)) <= version.parse(str("24.6.1")) and version.parse(str(updates[upgrade]['name'])) >= version.parse(str("30.0.0")):
+            print_and_log("You are trying to upgrade to the new 30.x.x versions of AWX-RPM.")
+            print_and_log("Currently, the upgrade for the data doesn't work automatically, I hope to fix this in the near future.")
+            print_and_log("Are you sure you want to try to update, and fix your data manually? Please take a backup before doing so.")
+            print_and_log("")
+            upgradeanswer = input("Do you want to continue to upgrade? (Y/N)")
+            if upgradeanswer.lower() != "y":
+                print_and_log("")
+                print_and_log("Skipping upgrade")
+                quit()
+
         oldreponame = repos[0]
         newreponame = repos[0].replace(currentversion, updates[upgrade]['name'])
         newrepourl = repo.get(oldreponame,'baseurl').replace(currentversion, updates[upgrade]['name'])
